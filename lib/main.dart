@@ -51,15 +51,14 @@ class _EngineScreenState extends State<EngineScreen> {
     scene.background = three.Color(0x1a1a2e);
 
     camera = three.PerspectiveCamera(75, threeJs.width / threeJs.height, 0.1, 1000);
-    camera.position.setValues(5.0, 5.0, 8.0); // اصلاح شد به setValues
+    camera.position.setValues(5.0, 5.0, 8.0);
 
     scene.add(three.AmbientLight(0xffffff, 0.6));
     final dirLight = three.DirectionalLight(0xffffff, 1);
-    dirLight.position.setValues(5.0, 10.0, 7.0); // اصلاح شد به setValues
+    dirLight.position.setValues(5.0, 10.0, 7.0);
     scene.add(dirLight);
 
     final groundGeometry = three.PlaneGeometry(30, 30);
-    // اصلاح متریال برای نسخه جدید
     final groundMaterial = three.MeshStandardMaterial({
       three.MaterialProperty.color: three.Color(0x2a2a4a),
     });
@@ -67,8 +66,8 @@ class _EngineScreenState extends State<EngineScreen> {
     ground.rotation.x = -math.pi / 2;
     scene.add(ground);
 
-    // اصلاح OrbitControls برای نسخه جدید
-    orbitControls = OrbitControls(camera, threeJs.viewerKey);
+    // اصلاح شد به globalKey
+    orbitControls = OrbitControls(camera, threeJs.globalKey); 
     orbitControls.enableDamping = true;
     orbitControls.dampingFactor = 0.1;
     
@@ -77,7 +76,6 @@ class _EngineScreenState extends State<EngineScreen> {
 
   void addCube() {
     final geometry = three.BoxGeometry(1, 1, 1);
-    // اصلاح متریال برای نسخه جدید
     final material = three.MeshStandardMaterial({
       three.MaterialProperty.color: three.Color(0x4fc3f7),
     });
@@ -111,9 +109,9 @@ class _EngineScreenState extends State<EngineScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // اصلاح ویجت نمایش دهنده
+          // اصلاح شد به buildWidget
           Positioned.fill(
-            child: threeJs.viewer(onTapUp: onTapUp),
+            child: threeJs.buildWidget(onTapUp: onTapUp),
           ),
           
           Positioned(
