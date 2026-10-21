@@ -9,16 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  three_js: ^0.1.0
-  three_js_controls: ^0.1.0
-  # فعلاً برای جلوگیری از تداخل نسخه در گیت‌هاب، لودر را فعلا کامنت می‌کنیم
-  # three_js_core_loaders: ^0.0.1 
+  three_js: any
+  three_js_controls: any
   vector_math: ^2.1.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true
