@@ -36,9 +36,6 @@ class _EngineScreenState extends State<EngineScreen> {
   final List<three.Object3D> _objects = [];
   three.Object3D? _selectedObject;
   String _currentMode = 'translate';
-  
-  // متغیر برای فیزیک ساده
-  double _gravity = -9.8;
 
   @override
   void initState() {
@@ -54,20 +51,24 @@ class _EngineScreenState extends State<EngineScreen> {
     scene.background = three.Color(0x1a1a2e);
 
     camera = three.PerspectiveCamera(75, threeJs.width / threeJs.height, 0.1, 1000);
-    camera.position.set(5, 5, 8);
+    camera.position.setValues(5.0, 5.0, 8.0); // اصلاح شد به setValues
 
     scene.add(three.AmbientLight(0xffffff, 0.6));
     final dirLight = three.DirectionalLight(0xffffff, 1);
-    dirLight.position.set(5, 10, 7);
+    dirLight.position.setValues(5.0, 10.0, 7.0); // اصلاح شد به setValues
     scene.add(dirLight);
 
     final groundGeometry = three.PlaneGeometry(30, 30);
-    final groundMaterial = three.MeshStandardMaterial(color: three.Color(0x2a2a4a));
+    // اصلاح متریال برای نسخه جدید
+    final groundMaterial = three.MeshStandardMaterial({
+      three.MaterialProperty.color: three.Color(0x2a2a4a),
+    });
     final ground = three.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -math.pi / 2;
     scene.add(ground);
 
-    orbitControls = OrbitControls(camera, threeJs.globalWidth, threeJs.globalHeight);
+    // اصلاح OrbitControls برای نسخه جدید
+    orbitControls = OrbitControls(camera, threeJs.viewerKey);
     orbitControls.enableDamping = true;
     orbitControls.dampingFactor = 0.1;
     
@@ -76,12 +77,15 @@ class _EngineScreenState extends State<EngineScreen> {
 
   void addCube() {
     final geometry = three.BoxGeometry(1, 1, 1);
-    final material = three.MeshStandardMaterial(color: three.Color(0x4fc3f7));
+    // اصلاح متریال برای نسخه جدید
+    final material = three.MeshStandardMaterial({
+      three.MaterialProperty.color: three.Color(0x4fc3f7),
+    });
     final cube = three.Mesh(geometry, material);
     
-    cube.position.set(
+    cube.position.setValues(
       (math.Random().nextDouble() - 0.5) * 4,
-      3.0, // از ارتفاع سقوط می‌کند
+      3.0,
       (math.Random().nextDouble() - 0.5) * 4,
     );
     
@@ -100,12 +104,6 @@ class _EngineScreenState extends State<EngineScreen> {
     });
   }
 
-  void saveScene() {
-    final data = scene.toJson();
-    print("SCENE SAVED: $data"); 
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('صحنه در کنسول ذخیره شد!')));
-  }
-
   void changeMode(String mode) => setState(() => _currentMode = mode);
 
   @override
@@ -113,10 +111,11 @@ class _EngineScreenState extends State<EngineScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // رندر صحنه
-          threeJs.buildWidget(onTapUp: onTapUp),
+          // اصلاح ویجت نمایش دهنده
+          Positioned.fill(
+            child: threeJs.viewer(onTapUp: onTapUp),
+          ),
           
-          // دکمه‌ها
           Positioned(
             top: 40, left: 10, right: 10,
             child: Wrap(
@@ -126,12 +125,10 @@ class _EngineScreenState extends State<EngineScreen> {
                 _buildButton('🔄 چرخش', () => changeMode('rotate'), isActive: _currentMode == 'rotate'),
                 _buildButton('📐 مقیاس', () => changeMode('scale'), isActive: _currentMode == 'scale'),
                 _buildButton('🧊 مکعب', addCube),
-                _buildButton('💾 ذخیره', saveScene),
               ],
             ),
           ),
 
-          // پنل تنظیمات
           if (_selectedObject != null)
             Positioned(
               bottom: 20, left: 10, right: 10,
