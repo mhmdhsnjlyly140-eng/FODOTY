@@ -9,8 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  three_js: any
-  three_js_controls: any
+  three_js: 0.2.0
+  three_js_controls: 0.2.0
   vector_math: ^2.1.4
 
 dev_dependencies:
