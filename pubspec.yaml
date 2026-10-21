@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_gl: ^0.0.16
+  webview_flutter: ^4.7.0
 
 dev_dependencies:
   flutter_test:
