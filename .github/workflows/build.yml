@@ -22,8 +22,12 @@ jobs:
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        channel: 'stable' # اینجا به جای نسخه خاص، گفتیم آخرین نسخه پایدار رو بیاره
+        channel: 'stable'
         cache: true
+
+    # این مرحله فایل‌های اندروید و iOS رو اگر نبودن، خودش می‌سازه
+    - name: Recreate missing platform folders
+      run: flutter create . --platforms=android
 
     - name: Install dependencies
       run: flutter pub get
