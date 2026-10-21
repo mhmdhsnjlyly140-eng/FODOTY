@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gl/flutter_gl.dart';
-import 'dart:math' as math;
+import 'package:webview_flutter/webview_flutter.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      title: 'My 3D Engine Pro',
+      title: 'My 3D Engine',
       debugShowCheckedModeBanner: false,
       home: EngineScreen(),
     );
@@ -27,150 +26,104 @@ class EngineScreen extends StatefulWidget {
 }
 
 class _EngineScreenState extends State<EngineScreen> {
-  late FlutterGlPlugin _gl;
-  bool _isLoaded = false;
-  double _cubeRotY = 0.0;
-  double _cubePosX = 0.0;
-  double _cubePosY = 0.0;
-  double _cubePosZ = 0.0;
+  late final WebViewController _controller;
 
   @override
   void initState() {
     super.initState();
-    _initGL();
-  }
-
-  Future<void> _initGL() async {
-    _gl = FlutterGlPlugin();
-    await _gl.initialize();
     
-    // تنظیمات اولیه صحنه سه بعدی
-    _gl.gl.clearColor(0.1, 0.1, 0.2, 1.0);
-    _gl.gl.enable(WebGL.DEPTH_TEST);
-    _gl.gl.enable(WebGL.CULL_FACE);
+    // کد HTML سه‌بعدی (همون کدی که توی فاز ۳ نوشتیم)
+    const String htmlContent = '''
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    body { margin: 0; overflow: hidden; touch-action: none; }
+    canvas { display: block; }
+    #ui { position: fixed; top: 10px; left: 10px; z-index: 100; display: flex; gap: 6px; }
+    #ui button { padding: 8px 12px; border: none; border-radius: 6px; background: #4fc3f7; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <button onclick="addCube()">🧊 مکعب</button>
+  </div>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-    setState(() {
-      _isLoaded = true;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a2e);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(5, 5, 8);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(5, 10, 7);
+    scene.add(light);
+    
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(30, 30),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a4a })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+    
+    window.addCube = function() {
+      const cube = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 1, 1),
+        new THREE.MeshStandardMaterial({ color: 0x4fc3f7 })
+      );
+      cube.position.set((Math.random() - 0.5) * 4, 0.5, (Math.random() - 0.5) * 4);
+      scene.add(cube);
+    };
+    
+    addCube();
+    
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+    
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
     });
+  </script>
+</body>
+</html>
+''';
 
-    // شروع حلقه رندر
-    _renderLoop();
-  }
-
-  void _renderLoop() {
-    if (!mounted) return;
-    
-    // آپدیت چرخش مکعب
-    setState(() {
-      _cubeRotY += 0.02;
-    });
-
-    _gl.gl.clear(WebGL.COLOR_BUFFER_BIT | WebGL.DEPTH_BUFFER_BIT);
-    
-    // اینجا می‌توانید کدهای رندر با شیدرها و متریال‌ها را اضافه کنید
-    // فعلا برای تست یک مکعب ساده رندر می‌کنیم
-
-    _gl.update();
-    Future.delayed(const Duration(milliseconds: 16), _renderLoop);
-  }
-
-  @override
-  void dispose() {
-    _gl.dispose();
-    super.dispose();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadHtmlString(htmlContent);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // نمایش صحنه سه بعدی
-          Positioned.fill(
-            child: _isLoaded
-                ? FlutterGlView(
-                    gl: _gl,
-                    width: MediaQuery.of(context).size.width.toInt(),
-                    height: MediaQuery.of(context).size.height.toInt(),
-                  )
-                : const Center(child: CircularProgressIndicator()),
-          ),
-          
-          // دکمه‌های کنترل
-          Positioned(
-            top: 40, left: 10, right: 10,
-            child: Wrap(
-              spacing: 8, runSpacing: 8,
-              children: [
-                _buildButton('↔️ جابجایی', () => setState(() => _cubePosX += 0.5)),
-                _buildButton('🔄 چرخش', () => setState(() => _cubeRotY += 0.5)),
-                _buildButton('📐 مقیاس', () => setState(() {})),
-                _buildButton('🧊 مکعب', () => setState(() => _cubePosY += 0.5)),
-              ],
-            ),
-          ),
-
-          // پنل تنظیمات
-          Positioned(
-            bottom: 20, left: 10, right: 10,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xEE141428),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('تنظیمات مکعب', style: TextStyle(color: Colors.lightBlue)),
-                  Row(
-                    children: [
-                      _buildNumberField('X', _cubePosX, (v) => setState(() => _cubePosX = v)),
-                      _buildNumberField('Y', _cubePosY, (v) => setState(() => _cubePosY = v)),
-                      _buildNumberField('Z', _cubePosZ, (v) => setState(() => _cubePosZ = v)),
-                    ],
-                  )
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildButton(String text, VoidCallback onPressed) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.lightBlue,
-        foregroundColor: Colors.black,
-        minimumSize: Size.zero,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      ),
-      onPressed: onPressed,
-      child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-    );
-  }
-
-  Widget _buildNumberField(String label, double value, Function(double) onChanged) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: TextFormField(
-          initialValue: value.toStringAsFixed(1),
-          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-          style: const TextStyle(color: Colors.white, fontSize: 12),
-          decoration: InputDecoration(
-            labelText: label,
-            filled: true,
-            fillColor: const Color(0xFF2A2A4A),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          ),
-          onChanged: (val) {
-            if (double.tryParse(val) != null) onChanged(double.parse(val));
-          },
-        ),
-      ),
+      body: WebViewWidget(controller: _controller),
     );
   }
 }
