@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:three_js/three_js.dart' as three;
 import 'package:three_js_controls/three_js_controls.dart';
-import 'package:three_js_core_loaders/three_js_core_loaders.dart';
 import 'dart:math' as math;
 
 void main() {
@@ -37,8 +36,8 @@ class _EngineScreenState extends State<EngineScreen> {
   final List<three.Object3D> _objects = [];
   three.Object3D? _selectedObject;
   String _currentMode = 'translate';
-
-  // ۱. سیستم فیزیک ساده (برای جلوگیری از رد شدن از زمین)
+  
+  // متغیر برای فیزیک ساده
   double _gravity = -9.8;
 
   @override
@@ -47,19 +46,6 @@ class _EngineScreenState extends State<EngineScreen> {
     threeJs = three.ThreeJS(
       onSetupComplete: () => setState(() {}),
       setup: setupScene,
-      // ۲. لود مدل GLB (اختیاری)
-      onLoad: (loader) {
-        loader.loadModel('https://threejs.org/examples/models/gltf/DamagedHelmet/glTF/DamagedHelmet.gltf', 
-          onLoad: (gltf) {
-            final model = gltf.scene;
-            model.position.set(0, 1, -3);
-            model.scale.set(0.5, 0.5, 0.5);
-            scene.add(model);
-            _objects.add(model);
-            setState(() {});
-          }
-        );
-      },
     );
   }
 
@@ -85,7 +71,6 @@ class _EngineScreenState extends State<EngineScreen> {
     orbitControls.enableDamping = true;
     orbitControls.dampingFactor = 0.1;
     
-    // اضافه کردن یک مکعب اولیه
     addCube();
   }
 
@@ -96,7 +81,7 @@ class _EngineScreenState extends State<EngineScreen> {
     
     cube.position.set(
       (math.Random().nextDouble() - 0.5) * 4,
-      2.0, // از بالا می‌افته پایین (تست فیزیک)
+      3.0, // از ارتفاع سقوط می‌کند
       (math.Random().nextDouble() - 0.5) * 4,
     );
     
@@ -105,7 +90,6 @@ class _EngineScreenState extends State<EngineScreen> {
     setState(() {});
   }
 
-  // ۳. انتخاب با لمس
   void onTapUp(three.Vector2 screenCoord) {
     final raycaster = three.Raycaster();
     raycaster.setFromCamera(screenCoord, camera);
@@ -116,10 +100,9 @@ class _EngineScreenState extends State<EngineScreen> {
     });
   }
 
-  // ۴. ذخیره و بارگذاری (شبیه‌سازی با چاپ در کنسول)
   void saveScene() {
     final data = scene.toJson();
-    print("SCENE SAVED: $data"); // در نسخه بعدی در حافظه ذخیره می‌شود
+    print("SCENE SAVED: $data"); 
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('صحنه در کنسول ذخیره شد!')));
   }
 
@@ -130,9 +113,10 @@ class _EngineScreenState extends State<EngineScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          // رندر صحنه
           threeJs.buildWidget(onTapUp: onTapUp),
           
-          // دکمه‌های کنترل
+          // دکمه‌ها
           Positioned(
             top: 40, left: 10, right: 10,
             child: Wrap(
@@ -163,7 +147,7 @@ class _EngineScreenState extends State<EngineScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('تنظیمات', style: TextStyle(color: Colors.lightBlue)),
+                        const Text('تنظیمات شیء', style: TextStyle(color: Colors.lightBlue)),
                         IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () => setState(() => _selectedObject = null)),
                       ],
                     ),
