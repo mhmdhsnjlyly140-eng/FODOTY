@@ -21,8 +21,7 @@ jobs:
         channel: 'stable'
         cache: true
 
-    # این خط جادو می‌کنه: تمام فایل‌های گریدل و اندروید رو از صفر می‌سازه!
-    - name: Auto-generate Android folders
+    - name: Recreate missing platform folders
       run: flutter create . --platforms=android
 
     - run: flutter pub get
