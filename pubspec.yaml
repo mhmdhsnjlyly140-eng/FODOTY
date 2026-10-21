@@ -1,24 +1,24 @@
-name: pol_chi
-description: بازی پول‌چی - الیگودرز ۱۴۰۵
+name: my_3d_engine
+description: A personal 3D engine built with Flutter
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '^3.3.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  get: ^4.6.6
-  shared_preferences: ^2.2.2
+  three_js: ^0.2.0
+  three_js_controls: ^0.2.0
+  three_js_core_loaders: ^0.2.0
+  three_js_math: ^0.2.0
+  vector_math: ^2.1.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^2.0.0
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/images/
-    - assets/images/characters/
