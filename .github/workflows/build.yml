@@ -3,7 +3,7 @@ name: Build Flutter APK
 on:
   push:
     branches: [ "main", "master" ]
-  workflow_dispatch: # این گزینه اجازه میده دستی هم بیلد بگیری
+  workflow_dispatch:
 
 jobs:
   build:
@@ -22,8 +22,7 @@ jobs:
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.25.0' # این نسخه رو آپدیت کردیم تا مشکل Dart حل بشه
-        channel: 'stable'
+        channel: 'stable' # اینجا به جای نسخه خاص، گفتیم آخرین نسخه پایدار رو بیاره
         cache: true
 
     - name: Install dependencies
