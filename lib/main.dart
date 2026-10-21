@@ -66,8 +66,8 @@ class _EngineScreenState extends State<EngineScreen> {
     ground.rotation.x = -math.pi / 2;
     scene.add(ground);
 
-    // اصلاح شد به globalKey
-    orbitControls = OrbitControls(camera, threeJs.globalKey); 
+    // اصلاح برای نسخه 0.2.0
+    orbitControls = OrbitControls(camera, threeJs.viewerKey); 
     orbitControls.enableDamping = true;
     orbitControls.dampingFactor = 0.1;
     
@@ -109,9 +109,9 @@ class _EngineScreenState extends State<EngineScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // اصلاح شد به buildWidget
+          // اصلاح برای نسخه 0.2.0
           Positioned.fill(
-            child: threeJs.buildWidget(onTapUp: onTapUp),
+            child: threeJs.viewer(onTapUp: onTapUp),
           ),
           
           Positioned(
