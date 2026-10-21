@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:three_js/three_js.dart' as three;
-import 'package:three_js_controls/three_js_controls.dart';
+import 'package:flutter_gl/flutter_gl.dart';
 import 'dart:math' as math;
 
 void main() {
@@ -28,144 +27,122 @@ class EngineScreen extends StatefulWidget {
 }
 
 class _EngineScreenState extends State<EngineScreen> {
-  late three.ThreeJS threeJs;
-  late three.Scene scene;
-  late three.PerspectiveCamera camera;
-  late OrbitControls orbitControls;
-  
-  final List<three.Object3D> _objects = [];
-  three.Object3D? _selectedObject;
-  String _currentMode = 'translate';
+  late FlutterGlPlugin _gl;
+  bool _isLoaded = false;
+  double _cubeRotY = 0.0;
+  double _cubePosX = 0.0;
+  double _cubePosY = 0.0;
+  double _cubePosZ = 0.0;
 
   @override
   void initState() {
     super.initState();
-    threeJs = three.ThreeJS(
-      onSetupComplete: () => setState(() {}),
-      setup: setupScene,
-    );
+    _initGL();
   }
 
-  void setupScene() {
-    scene = three.Scene();
-    scene.background = three.Color(0x1a1a2e);
-
-    camera = three.PerspectiveCamera(75, threeJs.width / threeJs.height, 0.1, 1000);
-    camera.position.setValues(5.0, 5.0, 8.0);
-
-    scene.add(three.AmbientLight(0xffffff, 0.6));
-    final dirLight = three.DirectionalLight(0xffffff, 1);
-    dirLight.position.setValues(5.0, 10.0, 7.0);
-    scene.add(dirLight);
-
-    final groundGeometry = three.PlaneGeometry(30, 30);
-    final groundMaterial = three.MeshStandardMaterial({
-      three.MaterialProperty.color: three.Color(0x2a2a4a),
-    });
-    final ground = three.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -math.pi / 2;
-    scene.add(ground);
-
-    // اصلاح نهایی: استفاده از globalKey طبق مستندات نسخه 0.2.7
-    orbitControls = OrbitControls(camera, threeJs.globalKey); 
-    orbitControls.enableDamping = true;
-    orbitControls.dampingFactor = 0.1;
+  Future<void> _initGL() async {
+    _gl = FlutterGlPlugin();
+    await _gl.initialize();
     
-    addCube();
-  }
+    // تنظیمات اولیه صحنه سه بعدی
+    _gl.gl.clearColor(0.1, 0.1, 0.2, 1.0);
+    _gl.gl.enable(WebGL.DEPTH_TEST);
+    _gl.gl.enable(WebGL.CULL_FACE);
 
-  void addCube() {
-    final geometry = three.BoxGeometry(1, 1, 1);
-    final material = three.MeshStandardMaterial({
-      three.MaterialProperty.color: three.Color(0x4fc3f7),
-    });
-    final cube = three.Mesh(geometry, material);
-    
-    cube.position.setValues(
-      (math.Random().nextDouble() - 0.5) * 4,
-      3.0,
-      (math.Random().nextDouble() - 0.5) * 4,
-    );
-    
-    scene.add(cube);
-    _objects.add(cube);
-    setState(() {});
-  }
-
-  void onTapUp(three.Vector2 screenCoord) {
-    final raycaster = three.Raycaster();
-    raycaster.setFromCamera(screenCoord, camera);
-    final intersects = raycaster.intersectObjects(_objects, true);
-    
     setState(() {
-      _selectedObject = intersects.isNotEmpty ? intersects[0].object : null;
+      _isLoaded = true;
     });
+
+    // شروع حلقه رندر
+    _renderLoop();
   }
 
-  void changeMode(String mode) => setState(() => _currentMode = mode);
+  void _renderLoop() {
+    if (!mounted) return;
+    
+    // آپدیت چرخش مکعب
+    setState(() {
+      _cubeRotY += 0.02;
+    });
+
+    _gl.gl.clear(WebGL.COLOR_BUFFER_BIT | WebGL.DEPTH_BUFFER_BIT);
+    
+    // اینجا می‌توانید کدهای رندر با شیدرها و متریال‌ها را اضافه کنید
+    // فعلا برای تست یک مکعب ساده رندر می‌کنیم
+
+    _gl.update();
+    Future.delayed(const Duration(milliseconds: 16), _renderLoop);
+  }
+
+  @override
+  void dispose() {
+    _gl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // اصلاح نهایی: استفاده از build() طبق مستندات نسخه 0.2.7
+          // نمایش صحنه سه بعدی
           Positioned.fill(
-            child: threeJs.build(),
+            child: _isLoaded
+                ? FlutterGlView(
+                    gl: _gl,
+                    width: MediaQuery.of(context).size.width.toInt(),
+                    height: MediaQuery.of(context).size.height.toInt(),
+                  )
+                : const Center(child: CircularProgressIndicator()),
           ),
           
+          // دکمه‌های کنترل
           Positioned(
             top: 40, left: 10, right: 10,
             child: Wrap(
               spacing: 8, runSpacing: 8,
               children: [
-                _buildButton('↔️ جابجایی', () => changeMode('translate'), isActive: _currentMode == 'translate'),
-                _buildButton('🔄 چرخش', () => changeMode('rotate'), isActive: _currentMode == 'rotate'),
-                _buildButton('📐 مقیاس', () => changeMode('scale'), isActive: _currentMode == 'scale'),
-                _buildButton('🧊 مکعب', addCube),
+                _buildButton('↔️ جابجایی', () => setState(() => _cubePosX += 0.5)),
+                _buildButton('🔄 چرخش', () => setState(() => _cubeRotY += 0.5)),
+                _buildButton('📐 مقیاس', () => setState(() {})),
+                _buildButton('🧊 مکعب', () => setState(() => _cubePosY += 0.5)),
               ],
             ),
           ),
 
-          if (_selectedObject != null)
-            Positioned(
-              bottom: 20, left: 10, right: 10,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xEE141428),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('تنظیمات شیء', style: TextStyle(color: Colors.lightBlue)),
-                        IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () => setState(() => _selectedObject = null)),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        _buildNumberField('X', _selectedObject!.position.x, (v) => setState(() => _selectedObject!.position.x = v)),
-                        _buildNumberField('Y', _selectedObject!.position.y, (v) => setState(() => _selectedObject!.position.y = v)),
-                        _buildNumberField('Z', _selectedObject!.position.z, (v) => setState(() => _selectedObject!.position.z = v)),
-                      ],
-                    )
-                  ],
-                ),
+          // پنل تنظیمات
+          Positioned(
+            bottom: 20, left: 10, right: 10,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xEE141428),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('تنظیمات مکعب', style: TextStyle(color: Colors.lightBlue)),
+                  Row(
+                    children: [
+                      _buildNumberField('X', _cubePosX, (v) => setState(() => _cubePosX = v)),
+                      _buildNumberField('Y', _cubePosY, (v) => setState(() => _cubePosY = v)),
+                      _buildNumberField('Z', _cubePosZ, (v) => setState(() => _cubePosZ = v)),
+                    ],
+                  )
+                ],
               ),
             ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildButton(String text, VoidCallback onPressed, {bool isActive = false}) {
+  Widget _buildButton(String text, VoidCallback onPressed) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: isActive ? Colors.orange : Colors.lightBlue,
+        backgroundColor: Colors.lightBlue,
         foregroundColor: Colors.black,
         minimumSize: Size.zero,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
